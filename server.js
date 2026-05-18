@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import fs from "fs";
 import { InferenceClient } from "@huggingface/inference";
 import { v2 as cloudinary } from "cloudinary";
 import { v4 as uuidv4 } from "uuid";
@@ -12,7 +13,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+
+const clientDist = path.join(__dirname, "client", "dist");
 
 if (process.env.CLOUDINARY_URL) {
   // SDK reads cloudinary://key:secret@cloud_name from env
@@ -147,6 +149,18 @@ app.delete("/api/history/:id", async (req, res) => {
   }
   res.json({ success: true });
 });
+
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+} else {
+  console.warn(
+    "React build not found. Run: npm run build — or npm run dev for development."
+  );
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
