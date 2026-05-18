@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Image Generator</title>
+  <link rel="icon" href="/assets/favicon.ico" />
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222e;
+      --accent: #7c6fff;
+      --accent2: #ff6f91;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --border: #2e2e3e;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand { display: flex; align-items: center; gap: 1rem; }
+    .logo-wrap {
+      position: relative;
+      flex-shrink: 0;
+      border-radius: 14px;
+      padding: 4px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 24px rgba(124, 111, 255, .45), 0 0 48px rgba(255, 111, 145, .2);
+    }
+    .logo-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: .35;
+      filter: blur(10px);
+      z-index: -1;
+      animation: glow-pulse 2.5s ease-in-out infinite;
+    }
+  @keyframes glow-pulse {
+      0%, 100% { opacity: .25; transform: scale(1); }
+      50% { opacity: .55; transform: scale(1.04); }
+    }
+    .logo-main { width: 52px; height: 52px; object-fit: contain; border-radius: 10px; display: block; background: var(--bg); }
+    header h1 { font-size: 1.35rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header span { color: var(--muted); font-size: 0.85rem; }
+
+    .sidebar-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-hero {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--accent), var(--accent2), var(--accent));
+      opacity: .5;
+      filter: blur(14px);
+      animation: spin-slow 6s linear infinite;
+    }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    .logo-hero img { width: 100px; height: 100px; object-fit: contain; position: relative; z-index: 1; }
+    .sidebar-brand p { font-size: .75rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+
+    .layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; overflow-y: auto; }
+    .sidebar h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 1rem; }
+
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: .35rem; margin-top: 1rem; }
+    label:first-of-type { margin-top: 0; }
+    textarea, input[type=text], input[type=number], select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: .6rem .8rem;
+      font-size: 0.9rem; outline: none; transition: border .2s;
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    textarea:focus, input:focus, select:focus { border-color: var(--accent); }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    .range-row { display: flex; align-items: center; gap: .75rem; }
+    .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
+    .range-val { width: 38px; text-align: right; font-size: .85rem; color: var(--accent); font-weight: 600; }
+
+    button.generate {
+      width: 100%; margin-top: 1.25rem; padding: .85rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--radius); color: #fff;
+      font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    button.generate:hover { opacity: .9; transform: translateY(-1px); }
+    button.generate:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box { background: #3a1a1a; border: 1px solid #a03; border-radius: 8px; padding: .75rem 1rem; font-size: .85rem; color: #ff9999; margin-top: 1rem; display: none; }
+
+    .main { display: flex; flex-direction: column; overflow-y: auto; }
+
+    .result-area {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; min-height: 400px;
+    }
+    .placeholder { text-align: center; color: var(--muted); }
+    .placeholder-logo {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .placeholder-logo::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: linear-gradient(var(--bg), var(--bg)) padding-box,
+        linear-gradient(135deg, var(--accent), var(--accent2)) border-box;
+      animation: glow-pulse 2.5s ease-in-out infinite;
+    }
+    .placeholder-logo img {
+      width: 160px;
+      height: 160px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(124, 111, 255, .5));
+    }
+    .placeholder p { font-size: .95rem; }
+
+    button.generate .btn-logo {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      vertical-align: middle;
+      margin-right: .35rem;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,.6));
+    }
+
+    .image-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; max-width: 700px; width: 100%;
+    }
+    .image-card img { width: 100%; display: block; }
+    .image-card .meta { padding: 1rem 1.25rem; }
+    .image-card .prompt-text { font-size: .9rem; color: var(--text); margin-bottom: .5rem; }
+    .image-card .tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: .2rem .65rem; font-size: .75rem; color: var(--muted); }
+    .image-card .actions { display: flex; gap: .75rem; margin-top: 1rem; }
+    .btn-sm {
+      padding: .4rem .9rem; border-radius: 8px; font-size: .8rem; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; transition: background .2s;
+    }
+    .btn-sm:hover { background: var(--border); }
+
+    .history-section { border-top: 1px solid var(--border); padding: 1.5rem 2rem; }
+    .history-section h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 1rem; }
+    .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+    .hist-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s; }
+    .hist-item:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .hist-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .hist-item .hist-label { padding: .4rem .6rem; font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-wrap">
+      <img src="/assets/mainLogo.gif" alt="AI Image Generator" class="logo-main" />
+    </div>
+    <div>
+      <h1>AI Image Generator</h1>
+      <span>Powered by HuggingFace FLUX + Cloudinary</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-hero">
+        <img src="/assets/brandLogo.gif" alt="" />
+      </div>
+      <p>Create stunning AI art in seconds</p>
+    </div>
+
+    <h2>Generation Settings</h2>
+
+    <label>Model</label>
+    <select id="model">
+      <option value="flux-schnell">FLUX.1 Schnell (Fast)</option>
+      <option value="flux-dev">FLUX.1 Dev (Quality)</option>
+      <option value="stable-diffusion-xl">Stable Diffusion XL</option>
+    </select>
+
+    <label>Prompt *</label>
+    <textarea id="prompt" placeholder="A cinematic photo of an astronaut riding a horse on Mars, golden hour lighting, ultra detailed..."></textarea>
+
+    <label>Negative Prompt</label>
+    <textarea id="negative_prompt" placeholder="blurry, bad quality, watermark, text..." style="min-height:60px"></textarea>
+
+    <label>Steps <span id="steps-val" style="color:var(--accent);font-weight:600">5</span></label>
+    <div class="range-row">
+      <input type="range" id="num_inference_steps" min="1" max="50" value="5" oninput="document.getElementById('steps-val').textContent=this.value" />
+    </div>
+
+    <label>Guidance Scale <span id="guidance-val" style="color:var(--accent);font-weight:600">7.5</span></label>
+    <div class="range-row">
+      <input type="range" id="guidance_scale" min="1" max="20" step="0.5" value="7.5" oninput="document.getElementById('guidance-val').textContent=this.value" />
+    </div>
+
+    <div class="row2">
+      <div>
+        <label>Width (px)</label>
+        <select id="width">
+          <option value="512">512</option>
+          <option value="768">768</option>
+          <option value="1024" selected>1024</option>
+          <option value="1280">1280</option>
+        </select>
+      </div>
+      <div>
+        <label>Height (px)</label>
+        <select id="height">
+          <option value="512">512</option>
+          <option value="768">768</option>
+          <option value="1024" selected>1024</option>
+          <option value="1280">1280</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Seed (optional, for reproducibility)</label>
+    <input type="number" id="seed" placeholder="Leave blank for random" />
+
+    <label>Scheduler (optional)</label>
+    <input type="text" id="scheduler" placeholder="e.g. DPMSolverMultistep" />
+
+    <button class="generate" id="genBtn" onclick="generate()">
+      <span id="btnText"><img src="/assets/mainLogo.gif" alt="" class="btn-logo" /> Generate Image</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <div class="error-box" id="errorBox"></div>
+  </aside>
+
+  <main class="main">
+    <div class="result-area" id="resultArea">
+      <div class="placeholder">
+        <div class="placeholder-logo">
+          <img src="/assets/brandLogo.gif" alt="AI art preview" />
+        </div>
+        <p>Your generated image will appear here.</p>
+        <p style="margin-top:.5rem;font-size:.8rem">Fill in a prompt and click Generate!</p>
+      </div>
+    </div>
+
+    <div class="history-section" id="historySection" style="display:none">
+      <h2>Recent Generations</h2>
+      <div class="history-grid" id="historyGrid"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let history = [];
+
+  const MODEL_DEFAULT_STEPS = { "flux-schnell": 5, "flux-dev": 28, "stable-diffusion-xl": 20 };
+
+  document.getElementById('model').addEventListener('change', (e) => {
+    const steps = MODEL_DEFAULT_STEPS[e.target.value] || 5;
+    const slider = document.getElementById('num_inference_steps');
+    slider.value = steps;
+    document.getElementById('steps-val').textContent = steps;
+  });
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      if (data.history?.length) {
+        history = data.history;
+        const section = document.getElementById('historySection');
+        const grid = document.getElementById('historyGrid');
+        section.style.display = 'block';
+        grid.innerHTML = '';
+        history.forEach((item) => {
+          const div = document.createElement('div');
+          div.className = 'hist-item';
+          div.innerHTML = `<img src="${item.imageUrl}" loading="lazy" alt="" /><div class="hist-label">${escapeHtml(item.prompt)}</div>`;
+          div.onclick = () => showResult(item);
+          grid.appendChild(div);
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function generate() {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) { showError('Please enter a prompt.'); return; }
+
+    setLoading(true);
+    clearError();
+
+    const body = {
+      prompt,
+      negative_prompt: document.getElementById('negative_prompt').value,
+      num_inference_steps: +document.getElementById('num_inference_steps').value,
+      guidance_scale: +document.getElementById('guidance_scale').value,
+      width: +document.getElementById('width').value,
+      height: +document.getElementById('height').value,
+      model: document.getElementById('model').value,
+      seed: document.getElementById('seed').value || undefined,
+      scheduler: document.getElementById('scheduler').value || undefined,
+    };
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      showResult(data.image);
+      addToHistory(data.image);
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function showResult(item) {
+    const area = document.getElementById('resultArea');
+    const seedTag = item.parameters.seed ? `<span class="tag">Seed: ${item.parameters.seed}</span>` : '';
+    area.innerHTML = `
+      <div class="image-card">
+        <img src="${item.imageUrl}" alt="${escapeHtml(item.prompt)}" loading="lazy" />
+        <div class="meta">
+          <div class="prompt-text">"${escapeHtml(item.prompt)}"</div>
+          <div class="tags">
+            <span class="tag">Model: ${escapeHtml(item.model)}</span>
+            <span class="tag">Steps: ${item.parameters.num_inference_steps}</span>
+            <span class="tag">CFG: ${item.parameters.guidance_scale}</span>
+            <span class="tag">${item.parameters.width}×${item.parameters.height}</span>
+            ${seedTag}
+          </div>
+          <div class="actions">
+            <a class="btn-sm" href="${item.imageUrl}" download="ai-image.png" target="_blank" rel="noopener">⬇ Download</a>
+            <button class="btn-sm" type="button" onclick="copyUrl('${item.imageUrl}')">🔗 Copy URL</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function copyUrl(url) {
+    navigator.clipboard.writeText(url);
+  }
+
+  function addToHistory(item) {
+    history.unshift(item);
+    const section = document.getElementById('historySection');
+    const grid = document.getElementById('historyGrid');
+    section.style.display = 'block';
+    const div = document.createElement('div');
+    div.className = 'hist-item';
+    div.innerHTML = `<img src="${item.imageUrl}" loading="lazy" alt="" /><div class="hist-label">${escapeHtml(item.prompt)}</div>`;
+    div.onclick = () => showResult(item);
+    grid.prepend(div);
+  }
+
+  function setLoading(on) {
+    const btn = document.getElementById('genBtn');
+    const txt = document.getElementById('btnText');
+    const spin = document.getElementById('spinner');
+    btn.disabled = on;
+    txt.style.display = on ? 'none' : 'inline';
+    spin.style.display = on ? 'block' : 'none';
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = '⚠ ' + msg;
+    box.style.display = 'block';
+  }
+
+  function clearError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
+
+  loadHistory();
+</script>
+</body>
+</html>
