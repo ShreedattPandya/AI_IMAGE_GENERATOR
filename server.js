@@ -18,15 +18,25 @@ app.use(express.json({ limit: "10mb" }));
 const clientDist = path.join(__dirname, "client", "dist");
 
 // Cloudinary config
-if (process.env.CLOUDINARY_URL) {
-  // SDK reads cloudinary://key:secret@cloud_name from env
-} else {
+if (!process.env.CLOUDINARY_URL) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 }
+
+// Lazy DB connection — safe for both serverless and long-running processes.
+// mongoose.connect() is idempotent; calling it when already connected is a no-op.
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("[DB] Connection failed:", err.message);
+    next(err);
+  }
+});
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -45,11 +55,13 @@ if (fs.existsSync(clientDist)) {
   );
 }
 
-// Connect to DB and start server
-const PORT = process.env.PORT || 3000;
-
-connectDB().then(() => {
+// Local dev: start the HTTP server
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () =>
     console.log(`Server running on http://localhost:${PORT}`)
   );
-});
+}
+
+// Export for Vercel serverless
+export default app;
