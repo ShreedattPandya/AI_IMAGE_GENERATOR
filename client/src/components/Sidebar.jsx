@@ -118,7 +118,7 @@ export default function Sidebar({ form, setForm, loading, error, onGenerate }) {
           placeholder="e.g. DPMSolverMultistep"
         />
 
-        <button type="submit" className="generate" disabled={loading}>
+        <button type="submit" className="btn-primary btn-generate" disabled={loading}>
           {loading ? (
             <span className="spinner" />
           ) : (
