@@ -1,11 +1,12 @@
 export default function Placeholder() {
   return (
     <div className="placeholder">
-      <div className="icon">🎨</div>
-      <p>Your generated image will appear here.</p>
-      <p style={{ marginTop: "0.5rem", fontSize: "0.8rem" }}>
-        Fill in a prompt and click Generate!
-      </p>
+      <div className="placeholder-ring" aria-hidden="true">
+        <span className="placeholder-icon">✦</span>
+      </div>
+      <h3>Your canvas awaits</h3>
+      <p>Describe your vision in the panel, then hit Generate.</p>
+      <p className="placeholder-hint">Results appear here in seconds</p>
     </div>
   );
 }
