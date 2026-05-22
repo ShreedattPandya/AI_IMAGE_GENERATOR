@@ -1,23 +1,34 @@
 import mongoose from "mongoose";
 
-// Cache the connection promise so serverless warm invocations reuse it
 let connectionPromise = null;
 
+export function getMongoUri() {
+  return process.env.MONGODB_URI?.trim() || "";
+}
+
 const connectDB = async () => {
-  // Already connected — nothing to do
+  const uri = getMongoUri();
+
+  if (!uri) {
+    const err = new Error(
+      "MONGODB_URI is not set. Add it in Vercel → Project → Settings → Environment Variables."
+    );
+    err.code = "MISSING_MONGODB_URI";
+    throw err;
+  }
+
   if (mongoose.connection.readyState === 1) return;
 
-  // Connection in progress — wait for it
   if (connectionPromise) return connectionPromise;
 
   connectionPromise = mongoose
-    .connect(process.env.MONGODB_URI)
+    .connect(uri)
     .then((conn) => {
       console.log(`MongoDB connected: ${conn.connection.host}`);
     })
     .catch((err) => {
       console.error("MongoDB connection error:", err.message);
-      connectionPromise = null; // allow retry on next request
+      connectionPromise = null;
       throw err;
     });
 

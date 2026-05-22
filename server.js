@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { v2 as cloudinary } from "cloudinary";
-import connectDB from "./db.js";
+import connectDB, { getMongoUri } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import imageRoutes from "./routes/images.js";
 
@@ -17,7 +17,6 @@ app.use(express.json({ limit: "10mb" }));
 
 const clientDist = path.join(__dirname, "client", "dist");
 
-// Cloudinary config
 if (!process.env.CLOUDINARY_URL) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -26,9 +25,19 @@ if (!process.env.CLOUDINARY_URL) {
   });
 }
 
-// Lazy DB connection — safe for both serverless and long-running processes.
-// mongoose.connect() is idempotent; calling it when already connected is a no-op.
-app.use(async (_req, _res, next) => {
+// Health check — no database required (useful on Vercel)
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    mongoConfigured: Boolean(getMongoUri()),
+    supabaseConfigured: Boolean(
+      process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
+    ),
+  });
+});
+
+// Connect MongoDB only for API routes (not static files / SPA)
+app.use("/api", async (req, res, next) => {
   try {
     await connectDB();
     next();
@@ -38,11 +47,9 @@ app.use(async (_req, _res, next) => {
   }
 });
 
-// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api", imageRoutes);
 
-// Serve static build in production
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get("*", (req, res, next) => {
@@ -55,13 +62,23 @@ if (fs.existsSync(clientDist)) {
   );
 }
 
-// Local dev: start the HTTP server
+app.use((err, req, res, _next) => {
+  if (res.headersSent) return;
+
+  const status = err.code === "MISSING_MONGODB_URI" ? 503 : 500;
+  res.status(status).json({
+    error: err.message || "Internal server error",
+  });
+});
+
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
+  if (!getMongoUri()) {
+    console.warn("⚠ MONGODB_URI is missing — API routes will fail until it is set.");
+  }
   app.listen(PORT, () =>
     console.log(`Server running on http://localhost:${PORT}`)
   );
 }
 
-// Export for Vercel serverless
 export default app;

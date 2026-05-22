@@ -236,7 +236,7 @@ router.post("/reset-password", async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Verify the OTP with Supabase
-    const result = await verifySupabaseOtp(normalizedEmail, resetCode.trim());
+    const result = await verifySupabaseOtp(normalizedEmail, resetCode.trim(), "email");
     if (!result.ok) {
       return res.status(400).json({ error: result.error || "Invalid or expired reset code." });
     }

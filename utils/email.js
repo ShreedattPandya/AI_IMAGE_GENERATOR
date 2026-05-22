@@ -17,17 +17,16 @@ function getSupabase() {
 }
 
 /**
- * Send a 6-digit OTP to the given email via Supabase Auth.
- * Supabase generates and delivers the OTP; we later verify it with verifySupabaseOtp().
- *
- * @param {string} email
- * @returns {{ ok: boolean, dev?: boolean }}
+ * Send a 6-digit OTP via Supabase Auth (email template configured in Supabase dashboard).
  */
 export async function sendVerificationOtp(email) {
   const supabase = getSupabase();
 
   if (!supabase) {
-    console.warn("[EMAIL] SUPABASE_URL / SUPABASE_ANON_KEY not set — OTP email not sent:", email);
+    console.warn(
+      "[OTP] SUPABASE_URL / SUPABASE_ANON_KEY not set — OTP not sent:",
+      email
+    );
     return { ok: false, dev: true };
   }
 
@@ -46,35 +45,26 @@ export async function sendVerificationOtp(email) {
   return { ok: true };
 }
 
-/**
- * Send a password-reset OTP via Supabase Auth (reuses the same signInWithOtp flow).
- *
- * @param {string} email
- * @returns {{ ok: boolean, dev?: boolean }}
- */
+/** Password reset uses the same Supabase email OTP flow */
 export async function sendPasswordResetOtp(email) {
   return sendVerificationOtp(email);
 }
 
 /**
- * Verify a Supabase OTP token for the given email.
- *
- * @param {string} email
- * @param {string} token  — the 6-digit code the user entered
- * @returns {{ ok: boolean, error?: string }}
+ * Verify OTP from email.
+ * @param {'email' | 'recovery'} type
  */
-export async function verifySupabaseOtp(email, token) {
+export async function verifySupabaseOtp(email, token, type = "email") {
   const supabase = getSupabase();
 
   if (!supabase) {
-    console.warn("[EMAIL] Supabase not configured — skipping OTP verification");
-    return { ok: false, error: "Email service not configured" };
+    return { ok: false, error: "Email service not configured (Supabase)." };
   }
 
   const { error } = await supabase.auth.verifyOtp({
     email,
     token,
-    type: "email",
+    type,
   });
 
   if (error) {

@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
             
             {generatedCode && (
               <div className="dev-notice">
-                Dev mode (no Resend key): <strong>{generatedCode}</strong>
+                Dev mode (Supabase not configured): check server logs
               </div>
             )}
             

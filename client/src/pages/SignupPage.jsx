@@ -138,7 +138,7 @@ export default function SignupPage() {
 
             {devOtp && (
               <div className="dev-notice">
-                Dev mode (no Resend key): <strong>{devOtp}</strong>
+                Dev mode (Supabase not configured): <strong>{devOtp}</strong>
               </div>
             )}
 
