@@ -34,7 +34,7 @@
 | `CLOUDINARY_URL` | Or `CLOUDINARY_CLOUD_NAME` + `API_KEY` + `API_SECRET` |
 | `CLIENT_URL` | Your Vercel URL, e.g. `https://your-app.vercel.app` |
 
-4. Deploy. Copy the service URL, e.g. `https://gem-ai-api.onrender.com`.
+4. Deploy. Copy the service URL, e.g. `https://ai-image-generator-00bf.onrender.com`.
 
 Optional: use **Blueprint** with `render.yaml` in the repo root.
 
@@ -51,11 +51,11 @@ Optional: use **Blueprint** with `render.yaml` in the repo root.
 
 | Variable | Value |
 |----------|--------|
-| `VITE_API_URL` | Your Render API URL, e.g. `https://gem-ai-api.onrender.com` |
+| `VITE_API_URL` | Optional if `client/.env.production` is committed — otherwise set to `https://ai-image-generator-00bf.onrender.com` |
 
    No `MONGODB_URI`, `JWT_SECRET`, or `HF_TOKEN` on Vercel — those stay on Render only.
 
-4. Redeploy after saving env vars.
+4. Deploy (or redeploy after env changes).
 
 ---
 
