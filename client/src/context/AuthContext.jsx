@@ -70,12 +70,9 @@ export function AuthProvider({ children }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Signup failed");
-    if (data.needsVerification) return data;
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-      setUser(data.user);
-    }
+    localStorage.setItem("token", data.token);
+    setToken(data.token);
+    setUser(data.user);
     return data;
   };
 

@@ -32,50 +32,6 @@ export async function signupUser(name, email, password, confirmPassword) {
   return data;
 }
 
-export async function verifyEmail(email, otp) {
-  const res = await fetch(`${API}/api/auth/verify-email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, otp }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Verification failed");
-  return data;
-}
-
-export async function resendOtp(email) {
-  const res = await fetch(`${API}/api/auth/resend-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Could not resend code");
-  return data;
-}
-
-export async function forgotPassword(email) {
-  const res = await fetch(`${API}/api/auth/forgot-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
-}
-
-export async function resetPassword(email, resetCode, newPassword) {
-  const res = await fetch(`${API}/api/auth/reset-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, resetCode, newPassword }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Reset failed");
-  return data;
-}
-
 // ── Explore ──
 export async function fetchExplore({ page = 1, limit = 20, search = "", model = "", sort = "newest" } = {}) {
   const params = new URLSearchParams({ page, limit, search, model, sort });

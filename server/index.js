@@ -54,9 +54,6 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     service: "gem-ai-api",
     mongoConfigured: Boolean(getMongoUri()),
-    supabaseConfigured: Boolean(
-      process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
-    ),
   });
 });
 
@@ -79,7 +76,6 @@ app.use("/api", imageRoutes);
 
 app.use((err, _req, res, _next) => {
   if (res.headersSent) return;
-
   const status = err.code === "MISSING_MONGODB_URI" ? 503 : 500;
   res.status(status).json({
     error: err.message || "Internal server error",
@@ -87,7 +83,7 @@ app.use((err, _req, res, _next) => {
 });
 
 if (!getMongoUri()) {
-  console.warn("⚠ MONGODB_URI is missing — set it in Render Environment Variables.");
+  console.warn("⚠ MONGODB_URI is missing — set it in your environment variables.");
 }
 
 app.listen(PORT, () => {

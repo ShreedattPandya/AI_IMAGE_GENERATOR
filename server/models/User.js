@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: 6,
-      select: false, // don't return password by default
+      select: false,
     },
     avatar: {
       type: String,
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
     },
     emailVerified: {
       type: Boolean,
-      default: false,
+      default: true, // no email verification step while email service is not set up
     },
   },
   { timestamps: true }
