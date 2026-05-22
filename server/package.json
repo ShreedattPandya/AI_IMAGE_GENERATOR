@@ -5,6 +5,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "build": "echo \"No compile step — API is ready\"",
     "start": "node index.js",
     "dev": "node --watch index.js"
   },

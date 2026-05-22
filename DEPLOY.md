@@ -19,7 +19,8 @@
 1. [Render Dashboard](https://dashboard.render.com) → **New** → **Web Service** → connect your GitHub repo.
 2. Settings:
    - **Root Directory:** `server`
-   - **Build Command:** `npm install`
+   - **Root Directory:** `server` ← required
+   - **Build Command:** `npm install && npm run build` (or leave Render default — needs `build` script in `server/package.json`)
    - **Start Command:** `npm start`
    - **Health Check Path:** `/api/health`
 3. **Environment** tab — add these variables (paste from your local `.env`):
