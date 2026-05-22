@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { API_BASE } from "../config.js";
 
 const AuthContext = createContext(null);
 
@@ -23,7 +24,7 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      const res = await fetch("/api/auth/me", {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -48,7 +49,7 @@ export function AuthProvider({ children }) {
   }, [checkAuth]);
 
   const login = async (email, password) => {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -62,7 +63,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (name, email, password, confirmPassword) => {
-    const res = await fetch("/api/auth/signup", {
+    const res = await fetch(`${API_BASE}/api/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password, confirmPassword }),

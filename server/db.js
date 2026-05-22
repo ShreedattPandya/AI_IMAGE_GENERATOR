@@ -11,7 +11,7 @@ const connectDB = async () => {
 
   if (!uri) {
     const err = new Error(
-      "MONGODB_URI is not set. Add it in Vercel → Project → Settings → Environment Variables."
+      "MONGODB_URI is not set. Add it in Render → your service → Environment."
     );
     err.code = "MISSING_MONGODB_URI";
     throw err;

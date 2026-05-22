@@ -1,0 +1,23 @@
+{
+  "name": "gem-ai-server",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^3.5.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.2",
+    "uuid": "^11.0.5"
+  }
+}

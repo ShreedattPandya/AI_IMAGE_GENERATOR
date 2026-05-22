@@ -1,16 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "server.js"
-    }
-  ]
+  "buildCommand": "npm run build --prefix client",
+  "outputDirectory": "client/dist",
+  "installCommand": "npm install --prefix client",
+  "framework": null
 }

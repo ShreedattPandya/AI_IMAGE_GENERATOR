@@ -1,21 +1,45 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import fs from "fs";
+import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import express from "express";
+import cors from "cors";
 import { v2 as cloudinary } from "cloudinary";
 import connectDB, { getMongoUri } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import imageRoutes from "./routes/images.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load .env from server/ then repo root (local monorepo dev)
+dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/i.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "10mb" }));
-
-const clientDist = path.join(__dirname, "client", "dist");
 
 if (!process.env.CLOUDINARY_URL) {
   cloudinary.config({
@@ -25,10 +49,10 @@ if (!process.env.CLOUDINARY_URL) {
   });
 }
 
-// Health check — no database required (useful on Vercel)
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
+    service: "gem-ai-api",
     mongoConfigured: Boolean(getMongoUri()),
     supabaseConfigured: Boolean(
       process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
@@ -36,8 +60,11 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Connect MongoDB only for API routes (not static files / SPA)
-app.use("/api", async (req, res, next) => {
+app.get("/", (_req, res) => {
+  res.json({ ok: true, message: "Gem AI API — use /api/health" });
+});
+
+app.use("/api", async (_req, _res, next) => {
   try {
     await connectDB();
     next();
@@ -50,19 +77,7 @@ app.use("/api", async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api", imageRoutes);
 
-if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api")) return next();
-    res.sendFile(path.join(clientDist, "index.html"));
-  });
-} else {
-  console.warn(
-    "React build not found. Run: npm run build — or npm run dev for development."
-  );
-}
-
-app.use((err, req, res, _next) => {
+app.use((err, _req, res, _next) => {
   if (res.headersSent) return;
 
   const status = err.code === "MISSING_MONGODB_URI" ? 503 : 500;
@@ -71,14 +86,12 @@ app.use((err, req, res, _next) => {
   });
 });
 
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
-  if (!getMongoUri()) {
-    console.warn("⚠ MONGODB_URI is missing — API routes will fail until it is set.");
-  }
-  app.listen(PORT, () =>
-    console.log(`Server running on http://localhost:${PORT}`)
-  );
+if (!getMongoUri()) {
+  console.warn("⚠ MONGODB_URI is missing — set it in Render Environment Variables.");
 }
+
+app.listen(PORT, () => {
+  console.log(`Gem AI API running on port ${PORT}`);
+});
 
 export default app;
